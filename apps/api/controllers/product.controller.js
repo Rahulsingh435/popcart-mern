@@ -45,14 +45,11 @@ export const createProduct = async (req, res) => {
  */
 export const getAllProducts = async (req, res) => {
     try {
-        // Find all products in the database. 
-        // Passing an empty object {} means "find everything".
         const products = await Product.find({});
 
-        // Send the list of products back to the client
         res.status(200).json({
             success: true,
-            count: products.length, // Let the frontend know how many products exist
+            count: products.length, 
             data: products
         });
 
@@ -66,15 +63,12 @@ export const getAllProducts = async (req, res) => {
 };
 
 /**
- * 🔴 NAYA FUNCTION: Controller to delete a product by its ID.
+ * Controller to delete a product by its ID.
  * @route DELETE /api/products/:id
  */
 export const deleteProduct = async (req, res) => {
     try {
-        // URL se product ki ID nikalna
         const { id } = req.params;
-
-        // Database me wo ID dhoondh kar delete karna
         const deletedProduct = await Product.findByIdAndDelete(id);
 
         if (!deletedProduct) {
@@ -94,6 +88,40 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Server Error: Could not delete product."
+        });
+    }
+};
+
+/**
+ * 🟡 NAYA FUNCTION: Controller to update an existing product.
+ * @route PUT /api/products/:id
+ */
+export const updateProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedData = req.body; 
+
+        // Database me wo ID dhoondh kar naye data se replace karna
+        const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, { new: true });
+
+        if (!updatedProduct) {
+            return res.status(404).json({
+                success: false,
+                message: "Product nahi mila!"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Product successfully update ho gaya!",
+            data: updatedProduct
+        });
+
+    } catch (error) {
+        console.error(`[Product Error] Failed to update product: ${error.message}`);
+        res.status(500).json({
+            success: false,
+            message: "Server Error: Could not update product."
         });
     }
 };

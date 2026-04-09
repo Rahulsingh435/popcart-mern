@@ -5,10 +5,12 @@ function App() {
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', stock: '', imageUrl: ''
   });
+  
+  // 🟡 NAYA STATE: Ye yaad rakhega ki hum konsa product edit kar rahe hain
+  const [editingId, setEditingId] = useState(null); 
 
   const fetchProducts = () => {
-    // 🔴 NAYA LIVE BACKEND URL YAHAN HAI
-    fetch('https://popcart-mern.onrender.com/api/products')
+    fetch('http://localhost:5000/api/products')
       .then((response) => response.json())
       .then((data) => {
         if (data.success) setProducts(data.data);
@@ -22,12 +24,18 @@ function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 🟡 UPDATE SUBMIT: Ye check karega ki naya product daalna hai (POST) ya purana edit karna hai (PUT)
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     try {
-      // 🔴 NAYA LIVE BACKEND URL YAHAN HAI
-      const response = await fetch('https://popcart-mern.onrender.com/api/products', {
-        method: 'POST',
+      const url = editingId 
+        ? `http://localhost:5000/api/products/${editingId}` 
+        : 'http://localhost:5000/api/products';
+        
+      const methodType = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: methodType,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
@@ -36,8 +44,10 @@ function App() {
         })
       });
       const result = await response.json();
+      
       if (result.success) {
         setFormData({ name: '', description: '', price: '', stock: '', imageUrl: '' });
+        setEditingId(null); // Edit mode se bahar aana
         fetchProducts(); 
       }
     } catch (error) { console.error("Error saving product:", error); }
@@ -46,18 +56,37 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm("Kya aap sach me is product ko hamesha ke liye delete karna chahte hain?")) {
       try {
-        // 🔴 NAYA LIVE BACKEND URL YAHAN HAI
-        const response = await fetch(`https://popcart-mern.onrender.com/api/products/${id}`, { method: 'DELETE' });
+        const response = await fetch(`http://localhost:5000/api/products/${id}`, { method: 'DELETE' });
         const result = await response.json();
         if (result.success) fetchProducts();
       } catch (error) { console.error("Error deleting product:", error); }
     }
   };
 
+  // 🟡 NAYA FUNCTION: Edit button dabane par form me data bharna
+  const handleEditClick = (product) => {
+    setEditingId(product._id);
+    setFormData({
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      imageUrl: product.imageUrl
+    });
+    // Form ke paas upar scroll karna
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
+
+  // Edit mode cancel karna
+  const cancelEdit = () => {
+    setEditingId(null);
+    setFormData({ name: '', description: '', price: '', stock: '', imageUrl: '' });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans pb-10">
       
-      {/* 🌟 Professional Navbar */}
+      {/* Navbar */}
       <nav className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4">
           <h1 className="text-2xl font-extrabold tracking-wider flex items-center gap-2">
@@ -71,10 +100,13 @@ function App() {
 
       <div className="max-w-7xl mx-auto px-4 mt-8">
         
-        {/* 🚀 Modern ADD NEW PRODUCT FORM */}
+        {/* ADD / EDIT FORM */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-10">
           <h2 className="text-xl font-bold mb-6 text-gray-700 flex items-center gap-2">
-            <span className="bg-blue-100 text-blue-600 p-2 rounded-lg text-sm">➕</span> Add New Product
+            <span className={`p-2 rounded-lg text-sm ${editingId ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'}`}>
+              {editingId ? '✏️' : '➕'}
+            </span> 
+            {editingId ? 'Edit Product Details' : 'Add New Product'}
           </h2>
           
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -84,13 +116,21 @@ function App() {
             <input type="number" name="stock" placeholder="Total Stock" value={formData.stock} onChange={handleChange} required className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 hover:bg-white transition" />
             <input type="url" name="imageUrl" placeholder="Image Link (https://...)" value={formData.imageUrl} onChange={handleChange} required className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 hover:bg-white transition" />
             
-            <button type="submit" className="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-200 mt-2 active:scale-[0.99]">
-              Save to Database 🚀
-            </button>
+            <div className="md:col-span-2 flex gap-3 mt-2">
+              <button type="submit" className={`flex-1 text-white font-bold py-3.5 rounded-xl transition shadow-lg active:scale-[0.99] ${editingId ? 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
+                {editingId ? 'Update Product ✏️' : 'Save to Database 🚀'}
+              </button>
+              
+              {editingId && (
+                <button type="button" onClick={cancelEdit} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3.5 rounded-xl transition active:scale-[0.99]">
+                  Cancel Edit ❌
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
-        {/* 📦 Beautiful PRODUCTS GRID */}
+        {/* PRODUCTS GRID */}
         <h2 className="text-2xl font-extrabold text-gray-800 mb-6 flex items-center gap-2">
           🔥 Latest Arrivals
         </h2>
@@ -122,11 +162,13 @@ function App() {
                   </span>
                 </div>
                 
-                {/* Actions */}
-                <div className="mt-auto">
-                  <button onClick={() => handleDelete(product._id)} className="w-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-100 py-2.5 rounded-xl font-bold transition duration-200 flex justify-center items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    Delete
+                {/* 🔴 Edit and Delete Buttons */}
+                <div className="mt-auto flex gap-2">
+                  <button onClick={() => handleEditClick(product)} className="flex-1 bg-yellow-50 hover:bg-yellow-500 text-yellow-600 hover:text-white border border-yellow-100 py-2.5 rounded-xl font-bold transition duration-200">
+                    ✏️ Edit
+                  </button>
+                  <button onClick={() => handleDelete(product._id)} className="flex-1 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-100 py-2.5 rounded-xl font-bold transition duration-200">
+                    🗑️ Delete
                   </button>
                 </div>
 
