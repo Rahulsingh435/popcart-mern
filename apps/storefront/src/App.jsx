@@ -5,12 +5,11 @@ function App() {
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', stock: '', imageUrl: ''
   });
-  
-  // 🟡 NAYA STATE: Ye yaad rakhega ki hum konsa product edit kar rahe hain
   const [editingId, setEditingId] = useState(null); 
 
   const fetchProducts = () => {
-    fetch('http://localhost:5000/api/products')
+    // 🔴 LIVE RENDER URL
+    fetch('https://popcart-mern.onrender.com/api/products')
       .then((response) => response.json())
       .then((data) => {
         if (data.success) setProducts(data.data);
@@ -24,13 +23,13 @@ function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🟡 UPDATE SUBMIT: Ye check karega ki naya product daalna hai (POST) ya purana edit karna hai (PUT)
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     try {
+      // 🔴 LIVE RENDER URL (Dono ke liye)
       const url = editingId 
-        ? `http://localhost:5000/api/products/${editingId}` 
-        : 'http://localhost:5000/api/products';
+        ? `https://popcart-mern.onrender.com/api/products/${editingId}` 
+        : 'https://popcart-mern.onrender.com/api/products';
         
       const methodType = editingId ? 'PUT' : 'POST';
 
@@ -47,7 +46,7 @@ function App() {
       
       if (result.success) {
         setFormData({ name: '', description: '', price: '', stock: '', imageUrl: '' });
-        setEditingId(null); // Edit mode se bahar aana
+        setEditingId(null);
         fetchProducts(); 
       }
     } catch (error) { console.error("Error saving product:", error); }
@@ -56,14 +55,14 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm("Kya aap sach me is product ko hamesha ke liye delete karna chahte hain?")) {
       try {
-        const response = await fetch(`http://localhost:5000/api/products/${id}`, { method: 'DELETE' });
+        // 🔴 LIVE RENDER URL
+        const response = await fetch(`https://popcart-mern.onrender.com/api/products/${id}`, { method: 'DELETE' });
         const result = await response.json();
         if (result.success) fetchProducts();
       } catch (error) { console.error("Error deleting product:", error); }
     }
   };
 
-  // 🟡 NAYA FUNCTION: Edit button dabane par form me data bharna
   const handleEditClick = (product) => {
     setEditingId(product._id);
     setFormData({
@@ -73,11 +72,9 @@ function App() {
       stock: product.stock,
       imageUrl: product.imageUrl
     });
-    // Form ke paas upar scroll karna
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
-  // Edit mode cancel karna
   const cancelEdit = () => {
     setEditingId(null);
     setFormData({ name: '', description: '', price: '', stock: '', imageUrl: '' });
