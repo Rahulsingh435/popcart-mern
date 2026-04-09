@@ -7,7 +7,8 @@ function App() {
   });
 
   const fetchProducts = () => {
-    fetch('http://localhost:5000/api/products')
+    // 🔴 NAYA LIVE BACKEND URL YAHAN HAI
+    fetch('https://popcart-mern.onrender.com/api/products')
       .then((response) => response.json())
       .then((data) => {
         if (data.success) setProducts(data.data);
@@ -24,7 +25,8 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     try {
-      const response = await fetch('http://localhost:5000/api/products', {
+      // 🔴 NAYA LIVE BACKEND URL YAHAN HAI
+      const response = await fetch('https://popcart-mern.onrender.com/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,7 +46,8 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm("Kya aap sach me is product ko hamesha ke liye delete karna chahte hain?")) {
       try {
-        const response = await fetch(`http://localhost:5000/api/products/${id}`, { method: 'DELETE' });
+        // 🔴 NAYA LIVE BACKEND URL YAHAN HAI
+        const response = await fetch(`https://popcart-mern.onrender.com/api/products/${id}`, { method: 'DELETE' });
         const result = await response.json();
         if (result.success) fetchProducts();
       } catch (error) { console.error("Error deleting product:", error); }
