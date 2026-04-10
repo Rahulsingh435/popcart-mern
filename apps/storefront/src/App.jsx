@@ -3,8 +3,8 @@ import Home from './pages/Home';
 import Admin from './pages/Admin';
 import ProductDetails from './pages/ProductDetails';
 import Login from './pages/Login';
-// 🟢 Ye rahi wo line jo Signup ko import karti hai
 import Signup from './pages/Signup'; 
+import Checkout from './pages/Checkout'; // 🛒 🟡 NAYA: Checkout ko import kiya
 
 function App() {
   return (
@@ -22,6 +22,9 @@ function App() {
         {/* 🔐 Authentication Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+
+        {/* 📦 🟡 NAYA: Checkout (Order) Route */}
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
     </Router>
   );

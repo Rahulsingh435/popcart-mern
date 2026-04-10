@@ -1,13 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // 🟢 NAYA: useNavigate ko import kiya
 
 function Admin() {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', description: '', price: '', stock: '', imageUrl: '' });
   const [editingId, setEditingId] = useState(null); 
+  
+  const navigate = useNavigate(); // 🟢 NAYA: Rasta badalne ke liye
+
+  // 🛡️ SECURITY GUARD LOGIC (Ye page khulte hi check karega)
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    // Check karo: Agar user nahi hai, YA user ka role admin/vendor nahi hai
+    if (!user || (user.role !== 'admin' && user.role !== 'vendor')) {
+      alert("🛑 Ruk jaaiye! Aap Admin nahi hain. Yahan aana mana hai.");
+      navigate('/'); // Wapas home page par phek do
+    }
+  }, [navigate]);
 
   const fetchProducts = () => {
-    fetch('https://popcart-mern.onrender.com/api/products')
+    fetch('http://localhost:5000/api/products') // API URL theek kiya
       .then((res) => res.json())
       .then((data) => { if (data.success) setProducts(data.data); })
       .catch((err) => console.error("Fetch error:", err));
@@ -16,11 +29,11 @@ function Admin() {
   useEffect(() => { fetchProducts(); }, []);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
+  
   const handleSubmit = async (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     try {
-      const url = editingId ? `https://popcart-mern.onrender.com/api/products/${editingId}` : 'https://popcart-mern.onrender.com/api/products';
+      const url = editingId ? `http://localhost:5000/api/products/${editingId}` : 'http://localhost:5000/api/products';
       const methodType = editingId ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method: methodType,
@@ -39,7 +52,7 @@ function Admin() {
   const handleDelete = async (id) => {
     if (window.confirm("Delete this product?")) {
       try {
-        const response = await fetch(`https://popcart-mern.onrender.com/api/products/${id}`, { method: 'DELETE' });
+        const response = await fetch(`http://localhost:5000/api/products/${id}`, { method: 'DELETE' });
         const result = await response.json();
         if (result.success) fetchProducts();
       } catch (err) { console.error("Delete error:", err); }
@@ -90,6 +103,7 @@ function Admin() {
               <img src={p.imageUrl} alt={p.name} className="h-40 object-contain mb-4" />
               <h3 className="font-bold text-lg mb-1">{p.name}</h3>
               <p className="text-2xl font-extrabold mb-4 text-blue-600">₹{p.price.toLocaleString('en-IN')}</p>
+            
               <div className="mt-auto flex gap-2">
                 <button onClick={() => handleEditClick(p)} className="flex-1 bg-yellow-50 text-yellow-600 py-2 rounded-xl font-bold text-sm">Edit</button>
                 <button onClick={() => handleDelete(p._id)} className="flex-1 bg-red-50 text-red-600 py-2 rounded-xl font-bold text-sm">Delete</button>
@@ -102,5 +116,4 @@ function Admin() {
   );
 }
 
-// ⚠️ YEH LINE SABSE ZAROORI HAI
 export default Admin;
