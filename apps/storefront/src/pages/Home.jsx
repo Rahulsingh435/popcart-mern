@@ -18,7 +18,8 @@ function Home() {
   const userData = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/products')
+    // 🌐 NAYA: Localhost ki jagah Render ka LIVE link daal diya!
+    fetch('https://popcart-mern.onrender.com/api/products')
       .then((res) => res.json())
       .then((data) => { if (data.success) setProducts(data.data); })
       .catch((err) => console.error(err));

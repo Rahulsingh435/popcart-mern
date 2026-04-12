@@ -62,7 +62,8 @@ function Checkout() {
         totalPrice
       };
 
-      const response = await fetch('http://localhost:5000/api/orders', {
+      // 🌐 NAYA: Localhost ki jagah Render ka LIVE link daal diya!
+      const response = await fetch('https://popcart-mern.onrender.com/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)

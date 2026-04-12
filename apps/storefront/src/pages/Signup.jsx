@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState(""); // 📱 NAYA State
+  const [phone, setPhone] = useState(""); 
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -22,10 +22,11 @@ function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/signup', {
+      // 🌐 NAYA: Localhost ki jagah Render ka LIVE link daal diya!
+      const response = await fetch('https://popcart-mern.onrender.com/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, password }) // phone add kiya
+        body: JSON.stringify({ name, email, phone, password }) 
       });
 
       const data = await response.json();
@@ -62,7 +63,6 @@ function Signup() {
             <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
             <input type="email" required placeholder="rahul@example.com" onChange={(e) => setEmail(e.target.value)} className="w-full mt-1 px-4 py-3 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-          {/* 📱 NAYA PHONE KA DABBA */}
           <div>
             <label className="text-sm font-bold text-slate-700 ml-1">Phone Number (+91)</label>
             <input type="number" required placeholder="9876543210" onChange={(e) => setPhone(e.target.value)} className="w-full mt-1 px-4 py-3 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" />

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "../components/ui/button";
 
 function Login() {
-  // 🟢 YAHAN DHYAN DIJIYE: 'email' ki jagah ab 'identifier' hai
   const [identifier, setIdentifier] = useState(""); 
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,10 +13,10 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      // 🌐 NAYA: Localhost ki jagah Render ka LIVE link daal diya!
+      const response = await fetch('https://popcart-mern.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // 🟢 YAHAN BHI: Backend ko 'identifier' hi bhejna hai
         body: JSON.stringify({ identifier, password }) 
       });
 
@@ -55,7 +54,6 @@ function Login() {
               required 
               className="w-full mt-1 px-4 py-3 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               placeholder="rahul@example.com OR 9876543210"
-              // 🟢 YAHAN BHI UPDATE HUA HAI
               onChange={(e) => setIdentifier(e.target.value)}
             />
           </div>

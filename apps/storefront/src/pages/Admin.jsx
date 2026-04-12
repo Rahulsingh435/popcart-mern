@@ -1,26 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // 🟢 NAYA: useNavigate ko import kiya
+import { Link, useNavigate } from 'react-router-dom'; 
 
 function Admin() {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({ name: '', description: '', price: '', stock: '', imageUrl: '' });
   const [editingId, setEditingId] = useState(null); 
   
-  const navigate = useNavigate(); // 🟢 NAYA: Rasta badalne ke liye
+  const navigate = useNavigate(); 
 
-  // 🛡️ SECURITY GUARD LOGIC (Ye page khulte hi check karega)
+  // 🛡️ SECURITY GUARD LOGIC
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     
     // Check karo: Agar user nahi hai, YA user ka role admin/vendor nahi hai
     if (!user || (user.role !== 'admin' && user.role !== 'vendor')) {
       alert("🛑 Ruk jaaiye! Aap Admin nahi hain. Yahan aana mana hai.");
-      navigate('/'); // Wapas home page par phek do
+      navigate('/'); 
     }
   }, [navigate]);
 
   const fetchProducts = () => {
-    fetch('http://localhost:5000/api/products') // API URL theek kiya
+    // 🌐 NAYA: Render ka live link
+    fetch('https://popcart-mern.onrender.com/api/products') 
       .then((res) => res.json())
       .then((data) => { if (data.success) setProducts(data.data); })
       .catch((err) => console.error("Fetch error:", err));
@@ -33,7 +34,8 @@ function Admin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const url = editingId ? `http://localhost:5000/api/products/${editingId}` : 'http://localhost:5000/api/products';
+      // 🌐 NAYA: Render ka live link (Edit aur Add dono ke liye)
+      const url = editingId ? `https://popcart-mern.onrender.com/api/products/${editingId}` : 'https://popcart-mern.onrender.com/api/products';
       const methodType = editingId ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method: methodType,
@@ -52,7 +54,8 @@ function Admin() {
   const handleDelete = async (id) => {
     if (window.confirm("Delete this product?")) {
       try {
-        const response = await fetch(`http://localhost:5000/api/products/${id}`, { method: 'DELETE' });
+        // 🌐 NAYA: Render ka live link Delete ke liye
+        const response = await fetch(`https://popcart-mern.onrender.com/api/products/${id}`, { method: 'DELETE' });
         const result = await response.json();
         if (result.success) fetchProducts();
       } catch (err) { console.error("Delete error:", err); }
