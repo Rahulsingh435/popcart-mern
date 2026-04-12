@@ -2,19 +2,28 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "../components/ui/button";
 
+// 🌐 NAYA: Razorpay ki script background mein load karne ka function
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 function Checkout() {
   const navigate = useNavigate();
   const [cart, setCart] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Address ka state
   const [shippingAddress, setShippingAddress] = useState({
     address: '', city: '', postalCode: '', country: 'India'
   });
 
   useEffect(() => {
-    // Local storage se Cart aur User ka data nikalo
     const savedCart = JSON.parse(localStorage.getItem('popcart_cart')) || [];
     const savedUser = JSON.parse(localStorage.getItem('user'));
 
@@ -30,54 +39,95 @@ function Checkout() {
     }
   }, [navigate]);
 
-  // Bill Calculation
   const itemsPrice = cart.reduce((total, item) => total + (item.price * item.qty), 0);
-  const shippingPrice = itemsPrice > 5000 ? 0 : 100; // 5000 se upar free delivery
-  const taxPrice = Number((0.18 * itemsPrice).toFixed(2)); // 18% GST
+  const shippingPrice = itemsPrice > 5000 ? 0 : 100; 
+  const taxPrice = Number((0.18 * itemsPrice).toFixed(2)); 
   const totalPrice = itemsPrice + shippingPrice + taxPrice;
 
   const handleChange = (e) => {
     setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
   };
 
+  // 💸 NAYA: Online Payment Wala Logic
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // 1. Script load karo
+      const isRazorpayLoaded = await loadRazorpay();
+      if (!isRazorpayLoaded) {
+        alert('Razorpay fail ho gaya. Apna internet check kijiye!');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Order ka poora data jo baad mein DB mein jayega
       const orderData = {
         userId: user.id,
-        orderItems: cart.map(item => ({
-          name: item.name,
-          qty: item.qty,
-          image: item.imageUrl,
-          price: item.price,
-          product: item._id
-        })),
+        orderItems: cart.map(item => ({ name: item.name, qty: item.qty, image: item.imageUrl, price: item.price, product: item._id })),
         shippingAddress,
-        paymentMethod: 'Cash On Delivery',
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice
+        itemsPrice, taxPrice, shippingPrice, totalPrice
       };
 
-      // 🌐 NAYA: Localhost ki jagah Render ka LIVE link daal diya!
-      const response = await fetch('https://popcart-mern.onrender.com/api/orders', {
+      // 3. Backend se Razorpay ka "Order ID" mangwao
+      const razorpayResponse = await fetch('https://popcart-mern.onrender.com/api/orders/razorpay/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
+        body: JSON.stringify({ amount: Math.round(totalPrice) })
       });
+      const razorpayOrder = await razorpayResponse.json();
 
-      const data = await response.json();
-
-      if (data.success) {
-        alert("🎉 Order Successfully Placed! Jaldi hi delivery hogi.");
-        localStorage.removeItem('popcart_cart'); // Order hone ke baad cart khali kar do
-        navigate('/'); // Wapas home par bhej do
-      } else {
-        alert("Oops! Order place nahi hua: " + data.message);
+      if (!razorpayOrder.success) {
+        alert('Payment gateway mein dikkat aayi!');
+        setLoading(false);
+        return;
       }
+
+      // 4. Razorpay ka asli Popup kholo!
+      const options = {
+        key: "rzp_test_1DP5mmOlF5G5ag", // Yahan test key hi rahegi
+        amount: razorpayOrder.order.amount,
+        currency: "INR",
+        name: "PopCart 🛍️",
+        description: "Secure Order Payment",
+        order_id: razorpayOrder.order.id,
+        handler: async function (response) {
+          
+          // 5. Payment ho gaya! Ab backend se verify karwao aur DB mein save karo
+          const verifyRes = await fetch('https://popcart-mern.onrender.com/api/orders/razorpay/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              orderData: orderData
+            })
+          });
+
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            alert("🎉 Payment Successful! Order Placed.");
+            localStorage.removeItem('popcart_cart'); 
+            navigate('/my-orders'); // Seedha My Orders page par bhej do
+          } else {
+            alert("❌ Payment fake hai ya verify nahi hui!");
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+        },
+        theme: { color: "#2563eb" } // Blue color theme
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+        alert("Payment fail ho gayi bhaiya! Wapas try kijiye.");
+      });
+      rzp.open();
+
     } catch (error) {
       console.error("Order Error:", error);
       alert("Server se connect nahi ho paya!");
@@ -113,10 +163,10 @@ function Checkout() {
               <input type="text" name="country" value="India" readOnly className="w-full mt-1 px-4 py-3 bg-slate-200 border-none rounded-2xl text-slate-500 cursor-not-allowed outline-none" />
             </div>
             
-            <Button disabled={loading} type="submit" className="w-full py-7 text-lg font-bold bg-green-600 hover:bg-green-700 rounded-2xl mt-6 text-white">
-              {loading ? "Placing Order... ⏳" : `Place Order (₹${totalPrice.toLocaleString('en-IN')}) 🚀`}
+            <Button disabled={loading} type="submit" className="w-full py-7 text-lg font-bold bg-blue-600 hover:bg-blue-700 rounded-2xl mt-6 text-white shadow-lg shadow-blue-200">
+              {loading ? "Processing... ⏳" : `Pay Online (₹${totalPrice.toLocaleString('en-IN')}) 💳`}
             </Button>
-            <p className="text-center text-xs font-bold text-slate-400 mt-2">Paying via Cash On Delivery</p>
+            <p className="text-center text-xs font-bold text-slate-400 mt-2">100% Secure Payments via Razorpay</p>
           </form>
         </div>
 
