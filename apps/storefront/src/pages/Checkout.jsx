@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "../components/ui/button";
 
-// 🌐 NAYA: Razorpay ki script background mein load karne ka function
 const loadRazorpay = () => {
   return new Promise((resolve) => {
     const script = document.createElement('script');
@@ -18,6 +17,9 @@ function Checkout() {
   const [cart, setCart] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // 🟢 NAYA: Payment method ka state (Default COD rakha hai)
+  const [paymentMethod, setPaymentMethod] = useState('COD'); 
 
   const [shippingAddress, setShippingAddress] = useState({
     address: '', city: '', postalCode: '', country: 'India'
@@ -48,13 +50,42 @@ function Checkout() {
     setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
   };
 
-  // 💸 NAYA: Online Payment Wala Logic
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 1. Script load karo
+      // Common Order Data
+      const orderData = {
+        userId: user.id,
+        orderItems: cart.map(item => ({ name: item.name, qty: item.qty, image: item.imageUrl, price: item.price, product: item._id })),
+        shippingAddress,
+        itemsPrice, taxPrice, shippingPrice, totalPrice,
+        // 🟢 NAYA: Backend ko batao kaunsa method chuna hai
+        paymentMethod: paymentMethod === 'COD' ? 'Cash On Delivery' : 'Online Payment (Razorpay)' 
+      };
+
+      // 📦 LOGIC 1: AGAR CUSTOMER NE COD CHUNA HAI
+      if (paymentMethod === 'COD') {
+        const response = await fetch('https://popcart-mern.onrender.com/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          alert("🎉 Order Successfully Placed (Cash On Delivery)!");
+          localStorage.removeItem('popcart_cart'); 
+          navigate('/my-orders'); 
+        } else {
+          alert("Oops! Order place nahi hua: " + data.message);
+        }
+        setLoading(false);
+        return; // COD tha toh yahi se wapas laut jao, aage ka Razorpay mat chalao
+      }
+
+      // 💳 LOGIC 2: AGAR CUSTOMER NE ONLINE CHUNA HAI (Razorpay)
       const isRazorpayLoaded = await loadRazorpay();
       if (!isRazorpayLoaded) {
         alert('Razorpay fail ho gaya. Apna internet check kijiye!');
@@ -62,15 +93,6 @@ function Checkout() {
         return;
       }
 
-      // 2. Order ka poora data jo baad mein DB mein jayega
-      const orderData = {
-        userId: user.id,
-        orderItems: cart.map(item => ({ name: item.name, qty: item.qty, image: item.imageUrl, price: item.price, product: item._id })),
-        shippingAddress,
-        itemsPrice, taxPrice, shippingPrice, totalPrice
-      };
-
-      // 3. Backend se Razorpay ka "Order ID" mangwao
       const razorpayResponse = await fetch('https://popcart-mern.onrender.com/api/orders/razorpay/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,17 +106,14 @@ function Checkout() {
         return;
       }
 
-      // 4. Razorpay ka asli Popup kholo!
       const options = {
-        key: "rzp_test_1DP5mmOlF5G5ag", // Yahan test key hi rahegi
+        key: "rzp_test_1DP5mmOlF5G5ag", 
         amount: razorpayOrder.order.amount,
         currency: "INR",
         name: "PopCart 🛍️",
         description: "Secure Order Payment",
         order_id: razorpayOrder.order.id,
         handler: async function (response) {
-          
-          // 5. Payment ho gaya! Ab backend se verify karwao aur DB mein save karo
           const verifyRes = await fetch('https://popcart-mern.onrender.com/api/orders/razorpay/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -110,16 +129,13 @@ function Checkout() {
           if (verifyData.success) {
             alert("🎉 Payment Successful! Order Placed.");
             localStorage.removeItem('popcart_cart'); 
-            navigate('/my-orders'); // Seedha My Orders page par bhej do
+            navigate('/my-orders'); 
           } else {
             alert("❌ Payment fake hai ya verify nahi hui!");
           }
         },
-        prefill: {
-          name: user.name,
-          email: user.email,
-        },
-        theme: { color: "#2563eb" } // Blue color theme
+        prefill: { name: user.name, email: user.email },
+        theme: { color: "#2563eb" } 
       };
 
       const rzp = new window.Razorpay(options);
@@ -162,11 +178,29 @@ function Checkout() {
               <label className="text-sm font-bold text-slate-700 ml-1">Country</label>
               <input type="text" name="country" value="India" readOnly className="w-full mt-1 px-4 py-3 bg-slate-200 border-none rounded-2xl text-slate-500 cursor-not-allowed outline-none" />
             </div>
+
+            {/* 🟢 NAYA: Payment Method Select Karne Ka Option */}
+            <div className="pt-4 pb-2">
+              <label className="text-sm font-bold text-slate-700 ml-1 block mb-3">Select Payment Method</label>
+              <div className="flex gap-4">
+                <label className={`flex-1 border-2 p-4 rounded-2xl cursor-pointer flex flex-col items-center gap-2 transition-all ${paymentMethod === 'COD' ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                  <input type="radio" name="payment" value="COD" className="hidden" checked={paymentMethod === 'COD'} onChange={(e) => setPaymentMethod(e.target.value)} />
+                  <span className="text-2xl">💵</span>
+                  <span className="font-bold text-sm text-slate-700">Cash on Delivery</span>
+                </label>
+                
+                <label className={`flex-1 border-2 p-4 rounded-2xl cursor-pointer flex flex-col items-center gap-2 transition-all ${paymentMethod === 'Online' ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                  <input type="radio" name="payment" value="Online" className="hidden" checked={paymentMethod === 'Online'} onChange={(e) => setPaymentMethod(e.target.value)} />
+                  <span className="text-2xl">💳</span>
+                  <span className="font-bold text-sm text-slate-700">Pay Online</span>
+                </label>
+              </div>
+            </div>
             
-            <Button disabled={loading} type="submit" className="w-full py-7 text-lg font-bold bg-blue-600 hover:bg-blue-700 rounded-2xl mt-6 text-white shadow-lg shadow-blue-200">
-              {loading ? "Processing... ⏳" : `Pay Online (₹${totalPrice.toLocaleString('en-IN')}) 💳`}
+            {/* 🟢 NAYA: Button ka text automatically change hoga */}
+            <Button disabled={loading} type="submit" className={`w-full py-7 text-lg font-bold rounded-2xl mt-4 text-white shadow-lg transition-all ${paymentMethod === 'COD' ? 'bg-slate-900 hover:bg-slate-800 shadow-slate-300' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}>
+              {loading ? "Processing... ⏳" : paymentMethod === 'COD' ? `Place Order (COD) 🚀` : `Pay ₹${totalPrice.toLocaleString('en-IN')} Online 💳`}
             </Button>
-            <p className="text-center text-xs font-bold text-slate-400 mt-2">100% Secure Payments via Razorpay</p>
           </form>
         </div>
 
