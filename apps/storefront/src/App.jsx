@@ -4,7 +4,8 @@ import Admin from './pages/Admin';
 import ProductDetails from './pages/ProductDetails';
 import Login from './pages/Login';
 import Signup from './pages/Signup'; 
-import Checkout from './pages/Checkout'; // 🛒 🟡 NAYA: Checkout ko import kiya
+import Checkout from './pages/Checkout'; 
+import MyOrders from './pages/MyOrders'; // 📦 🟡 NAYA: MyOrders ko import kiya
 
 function App() {
   return (
@@ -23,8 +24,11 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* 📦 🟡 NAYA: Checkout (Order) Route */}
+        {/* 💳 Checkout (Order Place) Route */}
         <Route path="/checkout" element={<Checkout />} />
+
+        {/* 📦 🟡 NAYA: Customer ke apne orders dekhne ka rasta */}
+        <Route path="/my-orders" element={<MyOrders />} />
       </Routes>
     </Router>
   );

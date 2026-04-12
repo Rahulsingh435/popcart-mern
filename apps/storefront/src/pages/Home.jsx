@@ -18,7 +18,6 @@ function Home() {
   const userData = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-    // 🌐 NAYA: Localhost ki jagah Render ka LIVE link daal diya!
     fetch('https://popcart-mern.onrender.com/api/products')
       .then((res) => res.json())
       .then((data) => { if (data.success) setProducts(data.data); })
@@ -142,6 +141,10 @@ function Home() {
               {userData ? (
                 <div className="flex items-center gap-2 pl-2 sm:pl-4 border-l border-slate-200">
                   <span className="text-sm font-bold text-slate-700 hidden lg:block">Hi, {userData.name.split(' ')[0]}!</span>
+                  
+                  {/* 📦 NAYA: My Orders ka button YAHAN JODA HAI */}
+                  <Link to="/my-orders" className="text-xs font-bold text-blue-600 hover:bg-blue-50 px-2 sm:px-3 h-10 flex items-center rounded-xl transition-all">Orders</Link>
+
                   <Button variant="ghost" className="text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2 sm:px-3 h-10 rounded-xl transition-all" onClick={handleLogout}>Logout</Button>
                 </div>
               ) : (
